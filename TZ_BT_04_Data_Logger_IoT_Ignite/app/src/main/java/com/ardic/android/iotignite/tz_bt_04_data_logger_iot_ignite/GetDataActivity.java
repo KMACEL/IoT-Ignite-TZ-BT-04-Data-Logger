@@ -1,18 +1,15 @@
 package com.ardic.android.iotignite.tz_bt_04_data_logger_iot_ignite;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.ProgressDialog;
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
-import android.content.DialogInterface;
+
 import android.os.Bundle;
 import android.util.Log;
 
 import android.view.View;
-import android.widget.EditText;
-import android.widget.LinearLayout;
+
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,9 +45,6 @@ public class GetDataActivity extends Activity{
     private TextView mGetDataTextView;
     private TextView txtPrint;
 
-    private ProgressDialog _ProgressDialog;
-    private Dialog _AlertDialog;
-
     private String SN = "";
     private String Password = "000000";
     private String DeviceName = "";
@@ -60,23 +54,21 @@ public class GetDataActivity extends Activity{
     private BluetoothAdapter mBluetoothAdapter;
     private BroadcastService mBroadcastService;
     private ConfigService _ConfigService;
-    private boolean _IsInit = false;
-    private boolean _IsScanning = false;
-    private boolean _IsConnecting = false;
-    private boolean _IsReading = false;
-    private boolean _IsSync = false;
     public Queue<byte[]> Buffer = new LinkedList<byte[]>();
     private int _SyncCount = 0;
     private int _SyncIndex = 0;
-    private int _SyncProgress = 0;
+    private int _SyncProgress=0;
+
+    private int getDataSize=25;
+
+    private  String mHumidity;
+    private String Temperature;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_get_data);
         txtPrint=(TextView)findViewById(R.id.getDataTextView);
-
-
     }
 
     public void getDataButtonClick(View v){
@@ -89,6 +81,7 @@ public class GetDataActivity extends Activity{
 
             mReport = new Report();
             mReport.SN = SN;
+
             Log.i(TAG,"Report create and send Device Id");
 
             runOnUiThread(new Runnable() {
@@ -118,63 +111,30 @@ public class GetDataActivity extends Activity{
             Log.i(TAG,"Create Bluetooth Manager and Bluetooth Adapter");
 
             if(mBroadcastService.Init(mBluetoothAdapter,_LocalBluetoothCallBack)){
-                _IsInit = true;
                 Log.i(TAG,"Control Bluetooth Service, Callback");
+
             }else {
-                _IsInit = false;
                 Toast.makeText(GetDataActivity.this, "Bluetooth not found !", Toast.LENGTH_SHORT).show();
                 Log.e(TAG,"Bluetooth not found !");
-                return;
             }
 
-            if(_IsScanning) {
-                return;
-            }
-
-
-            _IsScanning = true;
             mBroadcastService.StartScan();
             Log.i(TAG,"Broadcast Service Start");
 
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    Log.i(TAG,"Entered Scan Runnable");
-                    try {
-                        Thread.sleep(15000);
-                        if(_IsScanning){
-                            mBroadcastService.StopScan();
-                            _IsScanning = false;
-                            Log.i(TAG,"Scan Complete...");
-                        }
-                    }catch (Exception ex){
-                        Log.e(TAG,"Scan Runnable Error : "+ex.toString());
-                    }
-                }
-            }).start();
-
-
         }catch (Exception ex){
-            _IsInit = false;
-            _IsScanning = false;
+
             Toast.makeText(GetDataActivity.this, "Could not find the device!" + " ex:"+ex.toString(), Toast.LENGTH_SHORT).show();
             Log.e(TAG,"Could not find the device! "+ex.toString());
             finish();
         }
     }
 
-    /**
-     * Connect
-     */
+
     protected void Connect(Device device){
         Log.i(TAG,"Entered Connect Function");
         try {
-            if(_IsConnecting) {
-                Log.i(TAG,"Connection Control");
-                return;
-            }
             mBroadcastService.StopScan();
-            _IsScanning = false;
+
             Log.i(TAG,"Stop Broadcast Service");
 
             if(device != null) {
@@ -207,112 +167,65 @@ public class GetDataActivity extends Activity{
                          + "\nDevice Mac Adress : " + device.MacAddress);
             }
 
-            _IsConnecting = true;
+
 
             if(_ConfigService != null){
                 _ConfigService.Dispose();//*/****************
             }
 
-            _ConfigService = new ConfigService(mBluetoothAdapter,this,device.MacAddress,30000,_IConfigCallBack);
+            _ConfigService = new ConfigService(mBluetoothAdapter,this,device.MacAddress,30000,_IConfigCallBack);//***************
             Log.i(TAG,"Create Config Service");
 
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Thread.sleep(30000);
-                        if(_IsConnecting) {
-                            _ProgressDialog.cancel();
-                            _IsConnecting = false;
-                            Log.i(TAG,"Start Connect Runnable");
-                        }
-                    }catch (Exception ex){
-                        Log.e(TAG,"Connect Runnable Error : " + ex.toString());
-                    }
-                }
-            }).start();
         }catch (Exception ex){
-            _IsConnecting = false;
             Toast.makeText(GetDataActivity.this, "Unable to connect the device!" + " ex:"+ex.toString(), Toast.LENGTH_SHORT).show();
             Log.e(TAG,"Unable to connect the device! : " + ex.toString());
             finish();
         }
     }
 
-    /**
-     * Read Config
-     */
+
     protected void ReadConfig(){
         Log.i(TAG,"Entered Read Config Function");
         try {
-            if(_IsReading)
-                return;
 
-            _IsConnecting = false;
-
-
-            _IsReading = true;
-            if(HardwareModel.equals("3901"))
+            if(HardwareModel.equals("3901")) {
                 _ConfigService.ReadConfig_BT04(Firmware);
-            else
+            }else {
                 _ConfigService.ReadConfig_BT05(Firmware);
-
-            if(_ProgressDialog!=null && _ProgressDialog.isShowing())
-                _ProgressDialog.dismiss();
-            _ProgressDialog = new ProgressDialog(this).show(this,"","Reading device parameters...",true,true,new DialogInterface.OnCancelListener() {
-                @Override
-                public void onCancel(DialogInterface dialog) {
-                    Toast.makeText(GetDataActivity.this, "Can not read the device parameters!", Toast.LENGTH_SHORT).show();
-                    finish();
-                }
-            });
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Thread.sleep(15000);
-                        if(_IsReading){
-                            _ProgressDialog.cancel();
-                            _IsReading = false;
-                        }
-                    }catch (Exception ex){}
-                }
-            }).start();
+            }
+            Log.i(TAG,"Hardware Model Control  ");
 
         }catch (Exception ex){
-            _IsReading = false;
-            Toast.makeText(GetDataActivity.this, "Can not read the device parameters!" + " ex:"+ex.toString(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(GetDataActivity.this, "Can not read the device parameters! :" +ex.toString(), Toast.LENGTH_SHORT).show();
             finish();
         }
     }
 
-    /**
-     * Sync Data
-     */
+
     protected void SyncData(Device device){
+        Log.i(TAG,"Entered SYNC Data Function...");
         try {
-            if(_IsSync)
-                return;
 
-            _IsReading = false;
-
-            _SyncIndex = 0;
-            _SyncCount = 0;
-            _SyncProgress = 0;
-            Buffer.clear();
 
             if(device != null) {
-                if(device.Name != null && !device.Name.equals(""))
+                Log.i(TAG,"Sync Data Device Control");
+
+                if(device.Name != null && !device.Name.equals("")) {
                     DeviceName = device.Name;
+                }
+
                 if(device.SavaCount != 1000) {
                     _SyncCount = device.SavaCount;
                 }
 
                 mReport.Name = DeviceName + "("+device.SN+") -- "+ DateUtil.ToString(DateUtil.GetUTCTime(),"yyyyMMdd");
-                if(device.Notes != null)
+                if(device.Notes != null) {
                     mReport.Notes = device.Notes;
-                if(device.Description != null)
+                }
+
+                if(device.Description != null) {
                     mReport.Description = device.Description;
+                }
 
                 mReport.SamplingInterval = device.SaveInterval; //device.SamplingInterval;
                 mReport.LT = device.LT;
@@ -324,147 +237,158 @@ public class GetDataActivity extends Activity{
                 finish();
             }
 
-            _IsSync = true;
             _ConfigService.Sync(true);
 
-            if(_ProgressDialog!=null && _ProgressDialog.isShowing())
-                _ProgressDialog.dismiss();
+            Log.i(TAG,"SYNC Data Function :"
+                    + "\nDevice Name :" + DeviceName
+                    + "\nSync Count : " + _SyncCount
+                    + "\nReport Notes : " + mReport.Notes
+                    + "\nReport Description : " + mReport.Description
+                    + "\nReport Sampling Interval : " +  mReport.SamplingInterval
+                    + "\nReport LT : " + mReport.LT
+                    + "\nReport HT : " + mReport.HT);
 
-            _ProgressDialog = new ProgressDialog(this).show(this,"","Fetching data,please wait...",true,false,null);
-            _ProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-                @Override
-                public void onCancel(DialogInterface dialog) {
-                    Toast.makeText(GetDataActivity.this, "Extract the data has been canceled!", Toast.LENGTH_SHORT).show();
-                    finish();
-                }
-            });
-            _ProgressDialog.show();
-            _ProgressDialog.setProgress(0);
         }catch (Exception ex){
-            _IsSync = false;
-            Toast.makeText(GetDataActivity.this, "Extract data during abnormal!" + " ex:"+ex.toString(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(GetDataActivity.this, "Extract data during abnormal! : " + ex.toString(), Toast.LENGTH_SHORT).show();
+            Log.e(TAG,"Extract data during abnormal");
             finish();
         }
     }
 
     protected void ShowData(){
+        Log.i(TAG,"Entered Show Data Function");
         try {
-
-            //上一步骤状态关闭
-            _IsSync = false;
-            //_ConfigService.Sync(false);
             _ConfigService.Dispose();
+            Log.i(TAG,"Config Service Dispose...");
 
-            if(_ProgressDialog!=null && _ProgressDialog.isShowing())
-                _ProgressDialog.dismiss();
-
-            if(Buffer == null || Buffer.size() == 0)
-                return;
-
-            _ProgressDialog = new ProgressDialog(this).show(this,"","please wait...",true,false,null);
+           // _ProgressDialog = new ProgressDialog(this).show(this,"","please wait...",true,false,null);
+            // _ProgressDialog.dismiss();
             new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        double totalTemperature = 0;int totalTemperature_count = 0;
-                        double totalHumidity = 0;int totalHumidity_count = 0;
+                        double totalTemperature = 0;
+                        int totalTemperature_count = 0;
+                        double totalHumidity = 0;
+                        int totalHumidity_count = 0;
+                        Log.i(TAG,"Reset Total Variable ...");
+
                         while (Buffer.size() > 0) {
+                           // Log.i(TAG,"Buffer Size Loop ...");
+
                             Device device = new Device();
+                           // Log.i(TAG,"Create Device ...");
+
                             device.HardwareModel = HardwareModel;
+                           // Log.i(TAG,"Show Data : Device Hardware Model : " + device.HardwareModel);
+
                             device.Firmware = Firmware;
+                            //Log.i(TAG,"Show Data : Device Firmware : " + device.Firmware );
+
                             device.fromNotificationData(Buffer.remove());
+                           // Log.i(TAG,"Get Device From Notification Data : Set Buffer");
+
                             if(device !=null && device.UTCTime != null){
+                              //  Log.i(TAG,"Device Data Control...");
+
                                 if(device.Temperature != -1000) {
                                     totalTemperature += device.Temperature;
                                     totalTemperature_count ++;
-                                    if (mReport.MaxTemp == -1000)
-                                        mReport.MaxTemp = device.Temperature;
-                                    if (mReport.MinTemp == -1000)
-                                        mReport.MinTemp = device.Temperature;
-
-                                    if (device.Temperature > mReport.MaxTemp)
-                                        mReport.MaxTemp = device.Temperature;
-                                    if (device.Temperature < mReport.MinTemp)
-                                        mReport.MinTemp = device.Temperature;
+                                  //  Log.i(TAG,totalTemperature_count+ "Temperature : " + device.Temperature);
                                 }
+
                                 if(device.Humidity != -1000) {
                                     totalHumidity += device.Humidity;
                                     totalHumidity_count ++;
-                                    if (mReport.MaxHumidity == -1000)
-                                        mReport.MaxHumidity = device.Humidity;
-                                    if (mReport.MinHumidity == -1000)
-                                        mReport.MinHumidity = device.Humidity;
-
-                                    if (device.Humidity > mReport.MaxHumidity)
-                                        mReport.MaxHumidity = device.Humidity;
-                                    if (device.Humidity < mReport.MinHumidity)
-                                        mReport.MinHumidity = device.Humidity;
+                                   // Log.i(TAG,totalHumidity_count+ "Temperature : " + device.Humidity);
                                 }
 
                                 ReportData reportData = new ReportData(device);
+                               // Log.i(TAG,"Report Data Create and Send Device");
                                 mReport.Data.add(reportData);
                             }
                         }
 
+
+
                         mReport.DataCount = mReport.Data.size();
                         if(mReport.Data.size() > 0 ) {
-                            if(totalTemperature_count > 0)
-                                mReport.AvgTemp = Math.round(totalTemperature/ totalTemperature_count);
-                            if(totalHumidity_count > 0)
-                                mReport.AvgHumidity = Math.round(totalHumidity / totalHumidity_count);
                             mReport.BeginTime = mReport.Data.get(0).RecordTime;
                             mReport.EndTime = mReport.Data.get(mReport.Data.size() - 1).RecordTime;
+
+                            Log.i(TAG,"Data Get Begin Time : " + mReport.BeginTime);
+                            Log.i(TAG,"Data Get End Time : " + mReport.EndTime );
                         }
 
                         mReport.Generate();
+                        Log.i(TAG,"Report Generate ....");
 
                         GetDataActivity.this.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
                                 String printText = "";
-                                for (int i = 0; i < mReport.Data.size() && i < 25; i++) {
+
+                                Log.i(TAG,"Report Data Size : " +mReport.Data.size());
+                                Log.i(TAG,"Get Data Size : " + getDataSize);
+
+                                for (int i = 0; i < mReport.Data.size() && i < getDataSize; i++) {
                                     ReportData item = mReport.Data.get(i);
-                                    printText += (i + 1) + "、";
+                                    Log.i(TAG,"Item Add : " + mReport.Data.get(i));
+
+                                    printText += (i + 1) + ".";
                                     double tzone = DateUtil.GetTimeZone() / 60.0;
+
                                     printText += DateUtil.ToString(DateUtil.DateAddHours(item.RecordTime,tzone), "yyyy-MM-dd HH:mm:ss")+" ";
-                                    if(item.Temperature != -1000)
-                                        printText += "Temperature:" + item.Temperature+"℃";
-                                    else
+                                    if(item.Temperature != -1000) {
+                                        printText += "Temperature:" + item.Temperature + "℃";
+                                        Temperature = String.valueOf(item.Temperature);
+                                    }else {
                                         printText += "Temperature:--℃";
-                                    if(item.Humidity != -1000)
-                                        printText += "Humidity:" + item.Humidity+"%";
-                                    else
+                                        Temperature="--";
+                                    }
+                                    if(item.Humidity != -1000) {
+                                        printText += "Humidity:" + item.Humidity + "%";
+                                        mHumidity = String.valueOf(item.Humidity);
+                                    }else {
                                         printText += "Humidity:--%";
+                                        mHumidity="--";
+                                    }
                                     printText += "\n\n";
+
+                                    Log.i(TAG,"Get Time : " + (DateUtil.GetTimeZone() / 60.0)
+                                            + "\nTemperature : " + item.Temperature+ "℃"
+                                            + "\nHumidity:" + item.Humidity+"%");
+                                    Log.i(TAG, "\n-----------------\n");
 
                                 }
                                 txtPrint.setText(printText + "......");
-
-                                _ProgressDialog.dismiss();
-
                             }
                         });
 
                     }catch (Exception ex){
-                        _ProgressDialog.dismiss();
+                        Log.e(TAG,"Show Data Error ... : " + ex.toString());
                     }
                 }
             }).start();
 
         }catch (Exception ex){
-            Toast.makeText(GetDataActivity.this, " ex:"+ex.toString(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(GetDataActivity.this, " Show Data Error :"+ex.toString(), Toast.LENGTH_SHORT).show();
+            Log.e(TAG,"Show Data Error ... : " + ex.toString());
             finish();
         }
     }
 
     @Override
     protected void onDestroy() {
+        Log.i(TAG,"Entered On Destroy");
         try {
             if(mBroadcastService!=null)
                 mBroadcastService.StopScan();
             if(_ConfigService!=null)
                 _ConfigService.Dispose();
-        }catch (Exception ex){}
+        }catch (Exception ex){
+            Log.e(TAG,"On Destroy Error : " + ex.toString());
+        }
         super.onDestroy();
     }
 
@@ -528,12 +452,9 @@ public class GetDataActivity extends Activity{
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if(_IsSync) {
-                        if (_ProgressDialog != null && _ProgressDialog.isShowing())
-                            _ProgressDialog.dismiss();
-                        Toast.makeText(GetDataActivity.this, "Disconnected!", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
+                    Toast.makeText(GetDataActivity.this, "Disconnected!", Toast.LENGTH_SHORT).show();
+                    finish();
+
                 }
             });
         }
@@ -572,10 +493,10 @@ public class GetDataActivity extends Activity{
                 String crc = StringConvertUtil.bytesToHexString(BinaryUtil.CloneRange(data, data.length - 1, 1));
                 String checksum = CRC(BinaryUtil.CloneRange(data, 0, data.length - 1));
 
-                if (!checksum.equals(crc)) {
+                /*if (!checksum.equals(crc)) {
                     Log.e("SyncActivity", "SN：" + serial + " crc:" + crc + " error");
                     return;
-                }
+                }*/
 
                 if((HardwareModel.equals("3901") && Integer.parseInt(Firmware) < 20)
                         ||(HardwareModel.equals("3A01") && Integer.parseInt(Firmware) < 7)) {
