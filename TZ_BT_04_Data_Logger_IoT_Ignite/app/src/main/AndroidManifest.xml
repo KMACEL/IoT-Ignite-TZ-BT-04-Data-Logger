@@ -41,6 +41,12 @@
             android:label="@string/title_activity_scan" >
         </activity>
 
+        <activity
+            android:name=".GetDataActivity"
+            android:label="@string/title_activity_get_data" >
+        </activity>
+
+
     </application>
 
 </manifest>
