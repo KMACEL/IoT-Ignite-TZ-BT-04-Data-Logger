@@ -28,7 +28,7 @@ public class MainActivity extends Activity {
     public void showScanActivity(View v){
         Intent openIntent = new Intent(MainActivity.this, ScanActivity.class);
         startActivity(openIntent);
-        Log.i(TAG,"Click Scan Button");
+        Log.i(TAG,"Click scan Button");
     }
 
     public void showGetDataActivity(View v){

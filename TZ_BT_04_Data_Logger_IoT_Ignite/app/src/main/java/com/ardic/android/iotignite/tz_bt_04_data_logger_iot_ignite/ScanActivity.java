@@ -24,7 +24,7 @@ import java.util.TimerTask;
  */
 
 //*****************************************************************************************************************
-//***************** TODO: Scan Activity Class
+//***************** TODO: scan Activity Class
 //*****************************************************************************************************************
 public class ScanActivity extends Activity {
 
@@ -73,7 +73,7 @@ public class ScanActivity extends Activity {
         mScanTextView=(TextView) findViewById(R.id.scanTextView);
         mScanDataTextView=(TextView)findViewById(R.id.scandataTextView);
 
-        Log.i(TAG,"Create Scan Activity");
+        Log.i(TAG,"Create scan Activity");
         define_TZ_BT04();
     }
     //--------------------------------------------------On Create End ---------------------------------------------
@@ -102,11 +102,11 @@ public class ScanActivity extends Activity {
                         synchronized (this) {
                             if (_IsInit) {
                                 mBroadcastService.StartScan();
-                                Log.i(TAG, "Scan Bluetooth Devices");
+                                Log.i(TAG, "scan Bluetooth Devices");
                             }
                         }
                     }catch (Exception ex){
-                        Log.e(TAG,"Error On Resume -> Timer Task -> Scan Bluetooth Device : "+ex.toString());
+                        Log.e(TAG,"Error On Resume -> Timer Task -> scan Bluetooth Device : "+ex.toString());
                     }
                 }
             };
@@ -133,7 +133,7 @@ public class ScanActivity extends Activity {
             if (mBroadcastService!=null){
                 mBroadcastService.StopScan();
             }
-            Log.i(TAG,"Timer and Scan Stop...");
+            Log.i(TAG,"Timer and scan Stop...");
         }catch (Exception ex){
             Log.e(TAG,"Error On Destroy : "+ex.toString());
         }
@@ -198,7 +198,7 @@ public class ScanActivity extends Activity {
         //-------------------------------------------------------------------------------------------------------------
         @Override
         public void OnScanComplete() {
-            Log.i(TAG,"Entered TZONE SDK -> ILocalBluetoothCallBack -> On Scan Complate");
+            Log.i(TAG,"Entered TZONE SDK -> ILocalBluetoothCallBack -> On scan Complate");
         }
         //-------------------------------------------------------------------------------------------------------------
     };
@@ -338,5 +338,5 @@ public class ScanActivity extends Activity {
 
 }
 //*****************************************************************************************************************
-//************************************** Scan Activity Class End ***************************************************
+//************************************** scan Activity Class End ***************************************************
 //*****************************************************************************************************************

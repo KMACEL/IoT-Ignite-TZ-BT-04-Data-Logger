@@ -37,10 +37,14 @@ import java.util.UUID;
 /**
  * Created by root on 4/17/17.
  */
-
+//*****************************************************************************************************************
+//***************** TODO: Get Data Activity Class
+//*****************************************************************************************************************
 public class GetDataActivity extends Activity{
 
-
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++++++ TODO: DEFINITIONS
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     private static final String TAG = "GetDataActivity";
     private TextView mGetDataTextView;
     private TextView txtPrint;
@@ -53,7 +57,7 @@ public class GetDataActivity extends Activity{
     private Report mReport;
     private BluetoothAdapter mBluetoothAdapter;
     private BroadcastService mBroadcastService;
-    private ConfigService _ConfigService;
+    private ConfigService mConfigService;
     public Queue<byte[]> Buffer = new LinkedList<byte[]>();
     private int _SyncCount = 0;
     private int _SyncIndex = 0;
@@ -63,14 +67,295 @@ public class GetDataActivity extends Activity{
 
     private  String mHumidity;
     private String Temperature;
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //++++++++++++++++++++++++++++++++++++++ DEFINITIONS END ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+
+
+
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++++++ TODO: Activity Override
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    //-------------------------------------------------------------------------------------------------------------
+    //--------------------------------------------------TODO: On Create --------------------------------------------
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_get_data);
         txtPrint=(TextView)findViewById(R.id.getDataTextView);
     }
+    //--------------------------------------------------On Create End ---------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------
 
+
+
+    //-------------------------------------------------------------------------------------------------------------
+    //------------------------------------------------ TODO: On Destroy -------------------------------------------
+    @Override
+    protected void onDestroy() {
+        Log.i(TAG,"Entered On Destroy");
+        try {
+            if(mBroadcastService!=null)
+                mBroadcastService.StopScan();
+            if(mConfigService!=null)
+                mConfigService.Dispose();
+        }catch (Exception ex){
+            Log.e(TAG,"On Destroy Error : " + ex.toString());
+        }
+        super.onDestroy();
+    }
+    //--------------------------------------------------On Destroy End ---------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++++++++++++++++++++ Activity Override End +++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++++++ TODO: TZONE SDK
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    //-------------------------------------------------------------------------------------------------------------
+    //------------------------------------------------ TODO: ILocalBluetoothCallBack ------------------------------
+    public ILocalBluetoothCallBack mLocalBluetoothCallBack = new ILocalBluetoothCallBack() {
+        //-------------------------------------------------------------------------------------------------------------
+        @Override
+        public void OnEntered(BLE ble) {
+            Log.i(TAG,"Entered LocalBluetoothCallBack -> On Entered ");
+            final Device device = new Device();
+            device.fromScanData(ble);
+            Log.i(TAG,"Creade Device... LocalBluetoothCallBack -> On Entered ");
+
+            if(device.SN!=null && device.SN.equals(SN)){
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        connect(device);
+                        Log.i(TAG,"Connect Function : LocalBluetoothCallBack -> On Entered ");
+                    }
+                });
+            }
+        }
+        //-------------------------------------------------------------------------------------------------------------
+
+
+
+        //-------------------------------------------------------------------------------------------------------------
+        @Override
+        public void OnUpdate(BLE ble) {
+
+        }
+        //-------------------------------------------------------------------------------------------------------------
+
+
+
+        //-------------------------------------------------------------------------------------------------------------
+        @Override
+        public void OnExited(BLE ble) {
+
+        }
+        //-------------------------------------------------------------------------------------------------------------
+
+
+
+        //-------------------------------------------------------------------------------------------------------------
+        @Override
+        public void OnScanComplete() {
+
+        }
+        //-------------------------------------------------------------------------------------------------------------
+
+    };
+    //---------------------------------------------ILocalBluetoothCallBack End --------------------------------------
+    //---------------------------------------------------------------------------------------------------------------
+
+
+
+    //----------------------------------------------------------------------------------------------------------------
+    //------------------------------------------------ TODO: IConfigCallBack -----------------------------------------
+    public IConfigCallBack mIConfigCallBack = new IConfigCallBack() {
+        //-------------------------------------------------------------------------------------------------------------
+        @Override
+        public void OnReadConfigCallBack(boolean status, final HashMap<String, byte[]> uuids) {
+            if(status) {
+                Log.i(TAG,"Entered IConfig Call Back");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Device device = mConfigService.GetCofing(uuids);
+                        syncData(device);
+                    }
+                });
+            }
+        }
+        //-------------------------------------------------------------------------------------------------------------
+
+
+
+        //-------------------------------------------------------------------------------------------------------------
+        @Override
+        public void OnWriteConfigCallBack(boolean status) {
+
+        }
+        //-------------------------------------------------------------------------------------------------------------
+
+
+
+        //-------------------------------------------------------------------------------------------------------------
+        @Override
+        public void OnConnected() {
+
+        }
+        //-------------------------------------------------------------------------------------------------------------
+
+
+
+        //-------------------------------------------------------------------------------------------------------------
+        @Override
+        public void OnDisConnected() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(GetDataActivity.this, "Disconnected!", Toast.LENGTH_SHORT).show();
+                    finish();
+
+                }
+            });
+        }
+        //-------------------------------------------------------------------------------------------------------------
+
+
+
+        //-------------------------------------------------------------------------------------------------------------
+        @Override
+        public void OnServicesed(List<BLEGattService> services) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mConfigService.CheckToken(Password);
+                }
+            });
+        }
+        //-------------------------------------------------------------------------------------------------------------
+
+
+
+        //-------------------------------------------------------------------------------------------------------------
+        @Override
+        public void OnReadCallBack(UUID uuid, byte[] data) {
+
+        }
+        //-------------------------------------------------------------------------------------------------------------
+
+
+        //-------------------------------------------------------------------------------------------------------------
+        @Override
+        public void OnWriteCallBack(UUID uuid,final boolean isSuccess) {
+            if (uuid.toString().toLowerCase().equals(new CharacteristicHandle().GetCharacteristicUUID(CharacteristicType.Token).toString().toLowerCase())) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        ReadConfig();
+                    }
+                });
+            }
+        }
+        //-------------------------------------------------------------------------------------------------------------
+
+
+
+        //-------------------------------------------------------------------------------------------------------------
+        @Override
+        public void OnReceiveCallBack(UUID uuid, byte[] data) {
+            try {
+                int serial = Integer.parseInt(StringConvertUtil.bytesToHexString(BinaryUtil.CloneRange(data, data.length - 3, 2)),16); //data[data.length - 3] * 256 + data[data.length - 2];
+                String crc = StringConvertUtil.bytesToHexString(BinaryUtil.CloneRange(data, data.length - 1, 1));
+                String checksum = CRC(BinaryUtil.CloneRange(data, 0, data.length - 1));
+
+                /*if (!checksum.equals(crc)) {
+                    Log.e("SyncActivity", "SN：" + serial + " crc:" + crc + " error");
+                    return;
+                }*/
+
+                if((HardwareModel.equals("3901") && Integer.parseInt(Firmware) < 20)
+                        ||(HardwareModel.equals("3A01") && Integer.parseInt(Firmware) < 7)) {
+                    if (data.length >= 9) {
+                        Buffer.add(BinaryUtil.CloneRange(data, 0, 6));
+                        _SyncIndex++;
+                    }
+                    if (data.length >= 15) {
+                        Buffer.add(BinaryUtil.CloneRange(data, 6, 6));
+                        _SyncIndex++;
+                    }
+                }else {
+                    if (data.length >= 10) {
+                        Buffer.add(BinaryUtil.CloneRange(data, 0, 7));
+                        _SyncIndex++;
+                    }
+                    if (data.length >= 17) {
+                        Buffer.add(BinaryUtil.CloneRange(data, 7, 7));
+                        _SyncIndex++;
+                    }
+                }
+
+                final int syncProgress = (int)((Double.parseDouble(_SyncIndex+"") / _SyncCount) * 100);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        boolean isComplete = false;
+                        int progress = syncProgress;
+                        if(_SyncIndex >= _SyncCount){
+                            _SyncIndex = _SyncCount;
+                            progress = 100;
+                            isComplete = true;
+                        }
+                        _SyncProgress = progress;
+                        if(isComplete) {
+                            showData();
+                        }
+                    }
+                });
+
+            }catch (Exception ex){}
+        }
+        //---------------------------------------------------------------------------------------------------------
+
+    };
+
+
+    //-------------------------------------------------------------------------------------------------------------
+    public String CRC(byte[] data)
+    {
+        int num = 0;
+        for (int i = 0; i < data.length; i++)
+            num = (num + data[i]) % 0xffff;
+        String hex = Integer.toHexString(num);
+        if(hex.length()%2 > 0)
+            hex = "0"+hex;
+        String crc = hex.substring(hex.length()- 2);
+        return  crc;
+    }
+    //-------------------------------------------------------------------------------------------------------------
+
+    //--------------------------------------------- IConfigCallBack End -------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++++++ TZONE SDK END +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++++++ TODO: Button Click
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     public void getDataButtonClick(View v){
         Log.i(TAG,"Click Get Data Button");
         try {
@@ -87,8 +372,8 @@ public class GetDataActivity extends Activity{
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Scan();
-                    Log.i(TAG,"Get Data Button Runnable Scan...");
+                    scan();
+                    Log.i(TAG,"Get Data Button Runnable scan...");
                 }
             });
 
@@ -97,8 +382,21 @@ public class GetDataActivity extends Activity{
         }
 
     }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++++++ Button Click END ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-    protected void Scan(){
+
+
+
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++++++ TODO: Functions
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    //-------------------------------------------------------------------------------------------------------------
+    //------------------------------------------------ TODO: Scan -------------------------------------------------
+    protected void scan(){
         try {
 
             if(mBroadcastService == null){
@@ -110,7 +408,7 @@ public class GetDataActivity extends Activity{
             mBluetoothAdapter = bluetoothManager.getAdapter();
             Log.i(TAG,"Create Bluetooth Manager and Bluetooth Adapter");
 
-            if(mBroadcastService.Init(mBluetoothAdapter,_LocalBluetoothCallBack)){
+            if(mBroadcastService.Init(mBluetoothAdapter,mLocalBluetoothCallBack)){
                 Log.i(TAG,"Control Bluetooth Service, Callback");
 
             }else {
@@ -128,10 +426,15 @@ public class GetDataActivity extends Activity{
             finish();
         }
     }
+    //--------------------------------------------------Scan End --------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------
 
 
-    protected void Connect(Device device){
-        Log.i(TAG,"Entered Connect Function");
+
+    //-------------------------------------------------------------------------------------------------------------
+    //------------------------------------------------ TODO: Connect ----------------------------------------------
+    protected void connect(Device device){
+        Log.i(TAG,"Entered connect Function");
         try {
             mBroadcastService.StopScan();
 
@@ -169,11 +472,11 @@ public class GetDataActivity extends Activity{
 
 
 
-            if(_ConfigService != null){
-                _ConfigService.Dispose();//*/****************
+            if(mConfigService != null){
+                mConfigService.Dispose();//*/****************
             }
 
-            _ConfigService = new ConfigService(mBluetoothAdapter,this,device.MacAddress,30000,_IConfigCallBack);//***************
+            mConfigService = new ConfigService(mBluetoothAdapter,this,device.MacAddress,30000, mIConfigCallBack);//***************
             Log.i(TAG,"Create Config Service");
 
         }catch (Exception ex){
@@ -182,16 +485,21 @@ public class GetDataActivity extends Activity{
             finish();
         }
     }
+    //-------------------------------------------------- Connect End ----------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------
 
 
+
+    //-------------------------------------------------------------------------------------------------------------
+    //------------------------------------------------ TODO: Read Config ------------------------------------------
     protected void ReadConfig(){
         Log.i(TAG,"Entered Read Config Function");
         try {
 
             if(HardwareModel.equals("3901")) {
-                _ConfigService.ReadConfig_BT04(Firmware);
+                mConfigService.ReadConfig_BT04(Firmware);
             }else {
-                _ConfigService.ReadConfig_BT05(Firmware);
+                mConfigService.ReadConfig_BT05(Firmware);
             }
             Log.i(TAG,"Hardware Model Control  ");
 
@@ -200,9 +508,14 @@ public class GetDataActivity extends Activity{
             finish();
         }
     }
+    //-------------------------------------------------- Read Config End -----------------------------------------
+    //-------------------------------------------------------------------------------------------------------------
 
 
-    protected void SyncData(Device device){
+
+    //-------------------------------------------------------------------------------------------------------------
+    //------------------------------------------------ TODO: SYNC Data --------------------------------------------
+    protected void syncData(Device device){
         Log.i(TAG,"Entered SYNC Data Function...");
         try {
 
@@ -237,7 +550,7 @@ public class GetDataActivity extends Activity{
                 finish();
             }
 
-            _ConfigService.Sync(true);
+            mConfigService.Sync(true);
 
             Log.i(TAG,"SYNC Data Function :"
                     + "\nDevice Name :" + DeviceName
@@ -254,11 +567,17 @@ public class GetDataActivity extends Activity{
             finish();
         }
     }
+    //-------------------------------------------------- SYNC Data End --------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------
 
-    protected void ShowData(){
+
+
+    //-------------------------------------------------------------------------------------------------------------
+    //------------------------------------------------ TODO: Show Data --------------------------------------------
+    protected void showData(){
         Log.i(TAG,"Entered Show Data Function");
         try {
-            _ConfigService.Dispose();
+            mConfigService.Dispose();
             Log.i(TAG,"Config Service Dispose...");
 
            // _ProgressDialog = new ProgressDialog(this).show(this,"","please wait...",true,false,null);
@@ -308,7 +627,6 @@ public class GetDataActivity extends Activity{
                                 mReport.Data.add(reportData);
                             }
                         }
-
 
 
                         mReport.DataCount = mReport.Data.size();
@@ -377,181 +695,15 @@ public class GetDataActivity extends Activity{
             finish();
         }
     }
+    //-------------------------------------------------- Show Data End --------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------
 
-    @Override
-    protected void onDestroy() {
-        Log.i(TAG,"Entered On Destroy");
-        try {
-            if(mBroadcastService!=null)
-                mBroadcastService.StopScan();
-            if(_ConfigService!=null)
-                _ConfigService.Dispose();
-        }catch (Exception ex){
-            Log.e(TAG,"On Destroy Error : " + ex.toString());
-        }
-        super.onDestroy();
-    }
-
-    public ILocalBluetoothCallBack _LocalBluetoothCallBack = new ILocalBluetoothCallBack() {
-        @Override
-        public void OnEntered(BLE ble) {
-            final Device device = new Device();
-            device.fromScanData(ble);
-            if(device.SN!=null && device.SN.equals(SN)){
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Connect(device);
-                    }
-                });
-            }
-        }
-
-        @Override
-        public void OnUpdate(BLE ble) {
-
-        }
-
-        @Override
-        public void OnExited(BLE ble) {
-
-        }
-
-        @Override
-        public void OnScanComplete() {
-
-        }
-    };
-
-    public IConfigCallBack _IConfigCallBack = new IConfigCallBack() {
-        @Override
-        public void OnReadConfigCallBack(boolean status, final HashMap<String, byte[]> uuids) {
-            if(status) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Device device = _ConfigService.GetCofing(uuids);
-                        SyncData(device);
-                    }
-                });
-            }
-        }
-
-        @Override
-        public void OnWriteConfigCallBack(boolean status) {
-
-        }
-
-        @Override
-        public void OnConnected() {
-
-        }
-
-        @Override
-        public void OnDisConnected() {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(GetDataActivity.this, "Disconnected!", Toast.LENGTH_SHORT).show();
-                    finish();
-
-                }
-            });
-        }
-
-        @Override
-        public void OnServicesed(List<BLEGattService> services) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    _ConfigService.CheckToken(Password);
-                }
-            });
-        }
-
-        @Override
-        public void OnReadCallBack(UUID uuid, byte[] data) {
-
-        }
-
-        @Override
-        public void OnWriteCallBack(UUID uuid,final boolean isSuccess) {
-            if (uuid.toString().toLowerCase().equals(new CharacteristicHandle().GetCharacteristicUUID(CharacteristicType.Token).toString().toLowerCase())) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ReadConfig();
-                    }
-                });
-            }
-        }
-
-        @Override
-        public void OnReceiveCallBack(UUID uuid, byte[] data) {
-            try {
-                int serial = Integer.parseInt(StringConvertUtil.bytesToHexString(BinaryUtil.CloneRange(data, data.length - 3, 2)),16); //data[data.length - 3] * 256 + data[data.length - 2];
-                String crc = StringConvertUtil.bytesToHexString(BinaryUtil.CloneRange(data, data.length - 1, 1));
-                String checksum = CRC(BinaryUtil.CloneRange(data, 0, data.length - 1));
-
-                /*if (!checksum.equals(crc)) {
-                    Log.e("SyncActivity", "SN：" + serial + " crc:" + crc + " error");
-                    return;
-                }*/
-
-                if((HardwareModel.equals("3901") && Integer.parseInt(Firmware) < 20)
-                        ||(HardwareModel.equals("3A01") && Integer.parseInt(Firmware) < 7)) {
-                    if (data.length >= 9) {
-                        Buffer.add(BinaryUtil.CloneRange(data, 0, 6));
-                        _SyncIndex++;
-                    }
-                    if (data.length >= 15) {
-                        Buffer.add(BinaryUtil.CloneRange(data, 6, 6));
-                        _SyncIndex++;
-                    }
-                }else {
-                    if (data.length >= 10) {
-                        Buffer.add(BinaryUtil.CloneRange(data, 0, 7));
-                        _SyncIndex++;
-                    }
-                    if (data.length >= 17) {
-                        Buffer.add(BinaryUtil.CloneRange(data, 7, 7));
-                        _SyncIndex++;
-                    }
-                }
-
-                final int syncProgress = (int)((Double.parseDouble(_SyncIndex+"") / _SyncCount) * 100);
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        boolean isComplete = false;
-                        int progress = syncProgress;
-                        if(_SyncIndex >= _SyncCount){
-                            _SyncIndex = _SyncCount;
-                            progress = 100;
-                            isComplete = true;
-                        }
-                        _SyncProgress = progress;
-                        if(isComplete) {
-                            ShowData();
-                        }
-                    }
-                });
-
-            }catch (Exception ex){}
-        }
-    };
-
-    public String CRC(byte[] data)
-    {
-        int num = 0;
-        for (int i = 0; i < data.length; i++)
-            num = (num + data[i]) % 0xffff;
-        String hex = Integer.toHexString(num);
-        if(hex.length()%2 > 0)
-            hex = "0"+hex;
-        String crc = hex.substring(hex.length()- 2);
-        return  crc;
-    }
-
-
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++++++ Functions End +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 }
+
+//*****************************************************************************************************************
+//************************************** Get Data Activity Class End **********************************************
+//*****************************************************************************************************************
+
