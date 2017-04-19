@@ -3,4 +3,6 @@
 
     <string name="title_activity_scan">Scan</string>
     <string name="title_activity_get_data">Get Data</string>
+    <string name="title_activity_setting">Setting</string>
+    <string name="action_settings">Settings</string>
 </resources>

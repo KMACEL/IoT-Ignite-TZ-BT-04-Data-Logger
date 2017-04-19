@@ -64,6 +64,7 @@ public class GetDataActivity extends Activity{
     private int _SyncProgress=0;
 
     private int getDataSize=25;
+    private long configServiceTimeOut=30000;
 
     private  String mHumidity;
     private String Temperature;
@@ -310,13 +311,13 @@ public class GetDataActivity extends Activity{
                     @Override
                     public void run() {
                         boolean isComplete = false;
-                        int progress = syncProgress;
+                     //   int progress = syncProgress;
                         if(_SyncIndex >= _SyncCount){
                             _SyncIndex = _SyncCount;
-                            progress = 100;
+                           // progress = 100;
                             isComplete = true;
                         }
-                        _SyncProgress = progress;
+                        //_SyncProgress = progress;
                         if(isComplete) {
                             showData();
                         }
@@ -476,7 +477,7 @@ public class GetDataActivity extends Activity{
                 mConfigService.Dispose();//*/****************
             }
 
-            mConfigService = new ConfigService(mBluetoothAdapter,this,device.MacAddress,30000, mIConfigCallBack);//***************
+            mConfigService = new ConfigService(mBluetoothAdapter,this,device.MacAddress,configServiceTimeOut, mIConfigCallBack);//***************
             Log.i(TAG,"Create Config Service");
 
         }catch (Exception ex){

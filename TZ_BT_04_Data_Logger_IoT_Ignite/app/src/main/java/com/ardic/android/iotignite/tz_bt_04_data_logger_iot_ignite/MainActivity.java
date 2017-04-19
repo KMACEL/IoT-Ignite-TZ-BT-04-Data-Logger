@@ -13,6 +13,7 @@ public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private Button mScanButton;
     private Button mGetDataButton;
+    private Button mSettingButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,7 +22,7 @@ public class MainActivity extends Activity {
 
         mScanButton=(Button) findViewById(R.id.scanButton);
         mGetDataButton=(Button)findViewById(R.id.getDataButton);
-
+        mSettingButton=(Button)findViewById(R.id.settingButton);
         Log.i(TAG,"Create Main Activity");
     }
 
@@ -36,5 +37,11 @@ public class MainActivity extends Activity {
        startActivity(openIntent);
         Log.i(TAG,"Click Get Data Button");
 
+    }
+
+    public void showSettingActivity(View v){
+        Intent openIntent = new Intent(MainActivity.this, SettingActivity.class);
+        startActivity(openIntent);
+        Log.i(TAG,"Click Setting Button");
     }
 }

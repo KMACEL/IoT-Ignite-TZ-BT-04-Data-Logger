@@ -16,43 +16,27 @@ public class Report {
      * Report Name
      */
     public String Name;
-
     public String Notes;
-
     public String Description;
-
     public int SamplingInterval;
-
     public int Battery;
+
     /**
      * Device Type
      */
     public String ProductType;
-
     public String FirmwareVersion;
-
     public double LT;
-
     public double HT;
-
     public int DataCount;
-
     public double MaxTemp;
-
     public double MinTemp;
-
     public double AvgTemp;
-
     public double MaxHumidity;
-
     public double MinHumidity;
-
     public double AvgHumidity;
-
     public Date BeginTime;
-
     public Date EndTime;
-
 
     public List<ReportData> Data;
 
@@ -60,12 +44,10 @@ public class Report {
 
 
     public String ReportID;
-
     public String Token ;
-
     public Date CreateTime;
 
-        public Report(){
+    public Report(){
         SamplingInterval = -1000;
         Battery = -1000;
         LT = -1000;
@@ -95,7 +77,7 @@ public class Report {
             this.Token = ((new Random()).nextInt(9999-1000+1)+1000)+"";
             this.CreateTime = DateUtil.GetUTCTime();
 
-            //解决跨年时间问题
+
             //Year after year treatment
             if(this.Data.size() > 0){
                 int len = this.Data.size();
@@ -104,12 +86,11 @@ public class Report {
                     ReportData lastRd = null;
                     for (int i = 1; i <= len; i++) {
                         ReportData rd = this.Data.get(len - i);
-                        //找到跨前的数据
+
                         //Locate the data before the span
                         if(lastRd != null
                                 && rd.RecordTime.getYear() == lastRd.RecordTime.getYear()
                                 && Math.abs(rd.RecordTime.getMonth() - lastRd.RecordTime.getMonth()) == 11){
-                            //修正时间
                             //Correction time
                            /* rd.RecordTime = new Date(rd.RecordTime.getYear() - 1
                                     ,rd.RecordTime.getMonth()

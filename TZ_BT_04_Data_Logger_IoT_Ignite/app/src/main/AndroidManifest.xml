@@ -46,6 +46,11 @@
             android:label="@string/title_activity_get_data" >
         </activity>
 
+        <activity
+            android:name=".SettingActivity"
+            android:label="@string/title_activity_setting" >
+        </activity>
+
 
     </application>
 
